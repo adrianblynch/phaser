@@ -264,13 +264,13 @@
         // Rotate the bombs
         bombs.children.iterate(child => child.rotation += .3)
 
-        if (bombCount === 2 && platforms.children.size === 2) {
+        if (bombCount === 3 && platforms.children.size === 2) {
           platforms.create(-85, 400, "ground") // Bottom left
           platforms.create(1095, 400, "ground") // Bottom right
-        } else if (bombCount === 3 && platforms.children.size === 4) {
+        } else if (bombCount === 5 && platforms.children.size === 4) {
           platforms.create(50, 250, "ground") // Top left
           platforms.create(1275, 250, "ground") // Top right
-        } else if (bombCount === 4 && platforms.children.size === 6) {
+        } else if (bombCount === 7 && platforms.children.size === 6) {
           platforms.create(800, 250, "ground") // Top middle
         }
       }

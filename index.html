@@ -28,6 +28,7 @@
 
       let controls, player, bombs, mummy, bub, platforms
       let bombCount = 0
+      let TURBO = 30
 
       /////////////
       // Preload //
@@ -116,7 +117,7 @@
         // Random bounce on each star in stars group
         stars.children.iterate(child => {
           child.setBounce(Phaser.Math.FloatBetween(.1, .2))
-          child.setVelocityY(300)
+          child.setVelocityY(300 + TURBO)
         })
 
         // Stars and platform collisions
@@ -127,8 +128,10 @@
           star.disableBody(true, true)
           increaseScore(10)
 
+          // If all stars are collected
           if (stars.countActive(true) === 0) {
             createBomb()
+            increaseLevel()
             stars.children.iterate(child => child.enableBody(true, child.x, 0, true, true))
           }
         }
@@ -136,21 +139,36 @@
         // Player and star collisions
         this.physics.add.overlap(player, stars, collectStar, null, this)
         
-        ///////////
-        // Score //
-        ///////////
+        /////////////////////
+        // Score and level //
+        /////////////////////
+
+        const textStyles = { fontFamily: "Helvetica", fontSize: "34px", fill: "#000" }
 
         let score = 0
-        const scoreText = this.add.text(16, 16, "", { fontFamily: "Helvetica", fontSize: "34px", fill: "#000" })
+        const scoreText = this.add.text(16, 16, "", textStyles)
         const increaseScore = points => {
           score += points
           scoreText.setText(`Score: ${score}`)
         }
         increaseScore(0)
 
+        let level = 0
+        const levelText = this.add.text(1050, 16, "", textStyles)
+        const increaseLevel = () => {
+          level++
+          levelText.setText(`Level: ${level}`)
+        }
+
+        increaseScore(0)
+        increaseLevel()
+
         ///////////
         // Bombs //
         ///////////
+
+        const BOMB_SPEED_X = Phaser.Math.Between(-200, 200) + TURBO
+        const BOMB_SPEED_Y = 20 + TURBO
 
         bombs = this.physics.add.group()
 
@@ -161,7 +179,7 @@
           const bomb = bombs.create(Phaser.Math.Between(16, 784), 16, "bomb")
           bomb.setBounce(1)
           bomb.setCollideWorldBounds(true)
-          bomb.setVelocity(Phaser.Math.Between(-200, 200), 20)
+          bomb.setVelocity(BOMB_SPEED_X, BOMB_SPEED_Y)
           bombCount++
         }
 
@@ -174,10 +192,10 @@
         // Mummy //
         ///////////
 
-        const MUMMY_SPEED = 30
+        const MUMMY_SPEED = 30 + TURBO
         const MUMMY_START_X = 0
         const MUMMY_START_Y = 512
-        const MUMMY_START_TIME = 30000
+        const MUMMY_START_TIME = 10000
 
         this.anims.create({ key: "mummyWalk", frames: this.anims.generateFrameNumbers("mummy"), frameRate: 16, repeat: -1 })
 
@@ -195,10 +213,10 @@
         // Bub //
         /////////
 
-        const BUB_SPEED = 120
+        const BUB_SPEED = 120 + TURBO
         const BUB_START_X = 1199
         const BUB_START_Y = 520
-        const BUB_START_TIME = 60000
+        const BUB_START_TIME = 20000
 
         this.anims.create({
           key: "bubWalk",
@@ -223,8 +241,8 @@
 
         // this.cameras.main.centerOnX(900)
 
-        const PLAYER_SPEED = 180
-        const PLAYER_JUMP_SPEED = 320
+        const PLAYER_SPEED = 180 + TURBO
+        const PLAYER_JUMP_SPEED = 320 + TURBO
 
         // TODO: Freeze player when both left and right are pressed at the same time - Currently defaults to left as it's first in the checks below
 
@@ -262,7 +280,7 @@
         if (bub) this.physics.world.wrap(bub, 0);
 
         // Rotate the bombs
-        bombs.children.iterate(child => child.rotation += .3)
+        // bombs.children.iterate(child => child.rotation += .3)
 
         if (bombCount === 3 && platforms.children.size === 2) {
           platforms.create(-85, 400, "ground") // Bottom left

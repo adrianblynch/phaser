@@ -28,7 +28,15 @@
 
       let controls, player, bombs, mummy, bub, platforms
       let bombCount = 0
-      let TURBO = 30
+      let skyTint = 0
+
+      const TURBO = 30
+      const PLAYER_SPEED = 180 + TURBO
+      const PLAYER_JUMP_SPEED = 320 + TURBO
+      const MUMMY_SPEED = 30 + TURBO
+      const BUB_SPEED = 120 + TURBO
+      const BOMB_SPEED_X = Phaser.Math.Between(-200, 200) + TURBO
+      const BOMB_SPEED_Y = 20 + TURBO
 
       /////////////
       // Preload //
@@ -42,6 +50,7 @@
         this.load.spritesheet("dude", "assets/dude.png", { frameWidth: 27, frameHeight: 42 })
         this.load.spritesheet("mummy", "assets/mummy37x45.png", { frameWidth: 37, frameHeight: 45 })
         this.load.spritesheet("bub", "assets/bub-walking-7-32x32.png", { frameWidth: 32, frameHeight: 32 })
+        // this.load.spritesheet("bubble", "assets/bubble-32x32.png", { frameWidth: 24, frameHeight: 24 })
       }
 
       ////////////
@@ -62,14 +71,13 @@
         // Sky //
         /////////
 
-        this.add.image(0, 0, "sky").setOrigin(0, 0).setScale(2)
+        this.add.image(0, 0, "sky").setOrigin(0, 0).setScale(2)//.setTint(0x0)
 
         ///////////////
         // Platforms //
         ///////////////
 
         platforms = this.physics.add.staticGroup()
-
         platforms.create(-10, 536, "ground").setOrigin(0, 0).setScale(4, 2).refreshBody()
         platforms.create(595, 400, "ground") // Bottom middle
 
@@ -80,6 +88,9 @@
         player = this.physics.add.sprite(100, 515, "dude")
         player.setBounce(0)
         player.setCollideWorldBounds(false)
+        // Reduce the hitbox from left, top and right
+        player.body.setOffset(5, 10)
+        player.body.setSize(17, 32, false)
         
         // Player animations
         this.anims.create({ key: "playerLeft",  frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }), frameRate: 10, repeat: -1 })
@@ -93,8 +104,8 @@
           this.physics.pause()
           player.setTint(0xff0000)
           player.anims.play("playerTurn")
-          // mummy.anims.stop()
-          // bub.anims.stop()
+          mummy && mummy.anims.stop()
+          bub && bub.anims.stop()
         }
 
         // Cursors control the player
@@ -167,9 +178,6 @@
         // Bombs //
         ///////////
 
-        const BOMB_SPEED_X = Phaser.Math.Between(-200, 200) + TURBO
-        const BOMB_SPEED_Y = 20 + TURBO
-
         bombs = this.physics.add.group()
 
         this.physics.add.collider(bombs, platforms)
@@ -183,16 +191,16 @@
           bombCount++
         }
 
+        // Start with a single bomb
         createBomb()
 
-        // Bomb collision
+        // Bombs kill the player
         this.physics.add.overlap(player, bombs, die, null, this)
 
         ///////////
         // Mummy //
         ///////////
 
-        const MUMMY_SPEED = 30 + TURBO
         const MUMMY_START_X = 0
         const MUMMY_START_Y = 512
         const MUMMY_START_TIME = 10000
@@ -213,10 +221,9 @@
         // Bub //
         /////////
 
-        const BUB_SPEED = 120 + TURBO
         const BUB_START_X = 1199
         const BUB_START_Y = 520
-        const BUB_START_TIME = 20000
+        const BUB_START_TIME = 30000
 
         this.anims.create({
           key: "bubWalk",
@@ -232,6 +239,19 @@
           bub.anims.play("bubWalk")
           this.physics.add.overlap(player, bub, die, null, this)
         }, BUB_START_TIME)
+
+        // Bubble - Not in use yet
+        // this.anims.create({
+        //   key: "bubblePop",
+        //   frames: this.anims.generateFrameNumbers("bubble", { start: 0, end: 3 }),
+        //   frameRate: 8,
+        //   repeat: -1
+        // })
+        // const bubble = this.physics.add.sprite(500, 500, "bubble")
+        // bubble.setScale(2, 2)
+        // bubble.setCollideWorldBounds(false)
+        // this.physics.add.collider(bubble, platforms)
+        // bubble.anims.play("bubblePop")
       }
 
       ////////////
@@ -239,15 +259,9 @@
       ////////////
       function update() {
 
-        // this.cameras.main.centerOnX(900)
-
-        const PLAYER_SPEED = 180 + TURBO
-        const PLAYER_JUMP_SPEED = 320 + TURBO
-
         // TODO: Freeze player when both left and right are pressed at the same time - Currently defaults to left as it's first in the checks below
 
         // Movements
-
         if (controls.left.isDown) {
           player.setVelocityX(-PLAYER_SPEED)
           player.anims.play("playerLeft", true)
@@ -274,13 +288,13 @@
           player.setVelocityY(PLAYER_JUMP_SPEED / 2)
         }
 
-        // Wrap the world - Walks off left, comes back on right
+        // Wrap the world for player and some baddies
         this.physics.world.wrap(player, 0);
         if (mummy) this.physics.world.wrap(mummy, 0);
         if (bub) this.physics.world.wrap(bub, 0);
 
         // Rotate the bombs
-        // bombs.children.iterate(child => child.rotation += .3)
+        bombs.children.iterate(child => child.rotation += .1)
 
         if (bombCount === 3 && platforms.children.size === 2) {
           platforms.create(-85, 400, "ground") // Bottom left

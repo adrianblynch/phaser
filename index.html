@@ -42,15 +42,24 @@
       // Preload //
       /////////////
       function preload() {
-        // Load assets
+        // Backgrounds
         this.load.image("sky", "assets/sky.png")
+        this.load.svg("mountains", "assets/mountains-silhouette-original.svg", { width: 1200, height: 800 })
+
         this.load.image("ground", "assets/platform.png")
         this.load.image("star", "assets/star.png")
         this.load.image("bomb", "assets/bomb.png")
+        this.load.image("bombExplosion", "assets/bomb-explosion-28x28.png")
+
+        // Animations
         this.load.spritesheet("dude", "assets/dude.png", { frameWidth: 27, frameHeight: 42 })
         this.load.spritesheet("mummy", "assets/mummy37x45.png", { frameWidth: 37, frameHeight: 45 })
         this.load.spritesheet("bub", "assets/bub-walking-7-32x32.png", { frameWidth: 32, frameHeight: 32 })
-        // this.load.spritesheet("bubble", "assets/bubble-32x32.png", { frameWidth: 24, frameHeight: 24 })
+        this.load.spritesheet("bubble", "assets/bubble-32x32.png", { frameWidth: 24, frameHeight: 24 })
+
+        // Audio
+        this.load.audio("starCollect", "assets/sounds/star-collect.mp3")
+        this.load.audio("playerExplosion", "assets/sounds/player-explosion.mp3")
       }
 
       ////////////
@@ -58,20 +67,12 @@
       ////////////
       function create() {
 
-        ////////////
-        // Camera //
-        ////////////
+        /////////////////
+        // Backgrounds //
+        /////////////////
 
-        // console.log(this.cameras.main)
-        // this.cameras.main.centerOnX(900)
-        // this.cameras.main.setZoom(.9)
-        // this.cameras.main.centerY
-
-        /////////
-        // Sky //
-        /////////
-
-        this.add.image(0, 0, "sky").setOrigin(0, 0).setScale(2)//.setTint(0x0)
+        this.add.image(0, 0, "sky").setOrigin(0, 0).setScale(2, 1)
+        this.add.image(0, 0, "mountains").setOrigin(0, 0)
 
         ///////////////
         // Platforms //
@@ -80,6 +81,7 @@
         platforms = this.physics.add.staticGroup()
         platforms.create(-10, 536, "ground").setOrigin(0, 0).setScale(4, 2).refreshBody()
         platforms.create(595, 400, "ground") // Bottom middle
+        // NOTE: More platforms are added in update()
 
         ////////////
         // Player //
@@ -102,6 +104,8 @@
 
         const die = () => {
           this.physics.pause()
+          this.sound.play("playerExplosion")
+          explode(player)
           player.setTint(0xff0000)
           player.anims.play("playerTurn")
           mummy && mummy.anims.stop()
@@ -134,11 +138,14 @@
         // Stars and platform collisions
         this.physics.add.collider(stars, platforms)
 
+        // Sound
+        this.sound.add("starCollect", { seek: 1 });
+
         // When player collects a star
         const collectStar = (player, star) => {
           star.disableBody(true, true)
           increaseScore(10)
-
+          this.sound.play("starCollect")
           // If all stars are collected
           if (stars.countActive(true) === 0) {
             createBomb()
@@ -155,9 +162,12 @@
         /////////////////////
 
         const textStyles = { fontFamily: "Helvetica", fontSize: "34px", fill: "#000" }
+        const shadowArgs = [-2, 2, 'rgba(255, 255, 255, 0.5)', 0]
 
         let score = 0
         const scoreText = this.add.text(16, 16, "", textStyles)
+        scoreText.setShadow(...shadowArgs)
+
         const increaseScore = points => {
           score += points
           scoreText.setText(`Score: ${score}`)
@@ -166,6 +176,8 @@
 
         let level = 0
         const levelText = this.add.text(1050, 16, "", textStyles)
+        levelText.setShadow(...shadowArgs)
+
         const increaseLevel = () => {
           level++
           levelText.setText(`Level: ${level}`)
@@ -177,6 +189,8 @@
         ///////////
         // Bombs //
         ///////////
+
+        const explode = what => this.add.image(what.x, what.y, "bombExplosion").setScale(3, 3)
 
         bombs = this.physics.add.group()
 
@@ -194,8 +208,14 @@
         // Start with a single bomb
         createBomb()
 
+        // Sound when killed
+        this.sound.add("playerExplosion")
+
         // Bombs kill the player
         this.physics.add.overlap(player, bombs, die, null, this)
+
+        // Bombs blow eachother up
+        // this.physics.add.overlap(bombs, bombs, explode, null, this)
 
         ///////////
         // Mummy //
@@ -240,15 +260,15 @@
           this.physics.add.overlap(player, bub, die, null, this)
         }, BUB_START_TIME)
 
-        // Bubble - Not in use yet
+        // Bubble - Not in use
         // this.anims.create({
         //   key: "bubblePop",
-        //   frames: this.anims.generateFrameNumbers("bubble", { start: 0, end: 3 }),
+        //   frames: this.anims.generateFrameNumbers("bubble", { start: 0, end: 6 }),
         //   frameRate: 8,
         //   repeat: -1
         // })
-        // const bubble = this.physics.add.sprite(500, 500, "bubble")
-        // bubble.setScale(2, 2)
+        // const bubble = this.physics.add.sprite(500, 400, "bubble")
+        // // bubble.setScale(4, 4)
         // bubble.setCollideWorldBounds(false)
         // this.physics.add.collider(bubble, platforms)
         // bubble.anims.play("bubblePop")
@@ -307,6 +327,11 @@
         }
       }
     </script>
+    <style>
+      html, body {
+        margin: 0px;
+      }
+    </style>
 </head>
 <body>
   <div id="game"></div>
